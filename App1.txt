@@ -1,0 +1,1339 @@
+// src/App.jsx
+import React, { useState, useEffect } from 'react';
+import {
+  Search, Moon, Sun, Heart, TrendingUp, Users, DollarSign, Plus,
+  LogIn, LogOut, User, Settings, Eye, MessageCircle, Calendar,
+  Target, Star, Bell
+} from 'lucide-react';
+
+import {
+  LineChart, Line, XAxis, YAxis, CartesianGrid,
+  Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend
+} from 'recharts';
+
+// --------- بيانات المشاريع الابتدائية (مضاف لها backersList, updates, deadlineNotifiedFor, shareCounts, donationsHistory) ----------
+const initialProjects = [
+  {
+    id: 1,
+    title: "تطبيق توصيل الطعام المحلي",
+    description: "منصة ذكية لربط المطاعم المحلية بالعملاء مع نظام توصيل سريع",
+    category: "تقنية",
+    goal: 50000,
+    raised: 32000,
+    backers: 156,
+    daysLeft: 15,
+    image: "https://images.unsplash.com/photo-1526367790999-0150786686a2?w=800&auto=format&fit=crop",
+    owner: "أحمد محمد",
+    ownerAvatar: "👨‍💼",
+    ratings: [],
+    averageRating: 0,
+    backersList: [],
+    updates: [],
+    deadlineNotifiedFor: [],
+    shareCounts: { whatsapp: 0, twitter: 0, facebook: 0, copy: 0 },
+    donationsHistory: [
+      { date: getPastDate(14), amount: 2000, total: 2000 },
+      { date: getPastDate(12), amount: 3000, total: 5000 },
+      { date: getPastDate(9), amount: 2000, total: 7000 },
+      { date: getPastDate(5), amount: 15000, total: 22000 },
+      { date: getPastDate(2), amount: 10000, total: 32000 }
+    ]
+  },
+  {
+    id: 2,
+    title: "مشروع الزراعة العضوية",
+    description: "مزرعة عضوية صغيرة لإنتاج خضروات طازجة وصحية للمجتمع المحلي",
+    category: "زراعة",
+    goal: 30000,
+    raised: 28500,
+    backers: 89,
+    daysLeft: 5,
+    image: "https://images.unsplash.com/photo-1464226184884-fa280b87c399?w=800&auto=format&fit=crop",
+    owner: "فاطمة أحمد",
+    ownerAvatar: "👩‍🌾",
+    ratings: [],
+    averageRating: 0,
+    backersList: [],
+    updates: [],
+    deadlineNotifiedFor: [],
+    shareCounts: { whatsapp: 0, twitter: 0, facebook: 0, copy: 0 },
+    donationsHistory: [
+      { date: getPastDate(10), amount: 5000, total: 5000 },
+      { date: getPastDate(6), amount: 10000, total: 15000 },
+      { date: getPastDate(3), amount: 13500, total: 28500 }
+    ]
+  },
+  {
+    id: 3,
+    title: "ورشة صناعة الحرف اليدوية",
+    description: "مشروع لتمكين النساء من خلال صناعة وبيع المنتجات الحرفية التقليدية",
+    category: "حرف",
+    goal: 20000,
+    raised: 12000,
+    backers: 67,
+    daysLeft: 22,
+    image: "https://images.unsplash.com/photo-1452860606245-08befc0ff44b?w=800&auto=format&fit=crop",
+    owner: "ليلى حسن",
+    ownerAvatar: "👩‍🎨",
+    ratings: [],
+    averageRating: 0,
+    backersList: [],
+    updates: [],
+    deadlineNotifiedFor: [],
+    shareCounts: { whatsapp: 0, twitter: 0, facebook: 0, copy: 0 },
+    donationsHistory: [
+      { date: getPastDate(20), amount: 4000, total: 4000 },
+      { date: getPastDate(12), amount: 3000, total: 7000 },
+      { date: getPastDate(4), amount: 5000, total: 12000 }
+    ]
+  },
+  {
+    id: 4,
+    title: "مقهى الكتب والثقافة",
+    description: "مساحة ثقافية تجمع بين القراءة والقهوة والفعاليات الثقافية",
+    category: "ثقافة",
+    goal: 40000,
+    raised: 15000,
+    backers: 92,
+    daysLeft: 30,
+    image: "https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=800&auto=format&fit=crop",
+    owner: "عمر السيد",
+    ownerAvatar: "📚",
+    ratings: [],
+    averageRating: 0,
+    backersList: [],
+    updates: [],
+    deadlineNotifiedFor: [],
+    shareCounts: { whatsapp: 0, twitter: 0, facebook: 0, copy: 0 },
+    donationsHistory: [
+      { date: getPastDate(25), amount: 3000, total: 3000 },
+      { date: getPastDate(15), amount: 5000, total: 8000 },
+      { date: getPastDate(6), amount: 7000, total: 15000 }
+    ]
+  }
+];
+
+// helper: create a date string for x days ago (format YYYY-MM-DD)
+function getPastDate(daysAgo) {
+  const d = new Date();
+  d.setDate(d.getDate() - daysAgo);
+  return d.toISOString().slice(0, 10);
+}
+
+const CHART_COLORS = ['#4f46e5', '#10b981', '#f59e0b', '#ef4444'];
+
+const App = () => {
+  // حالات التطبيق
+  const [darkMode, setDarkMode] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [view, setView] = useState('home');
+  const [projects, setProjects] = useState(initialProjects);
+  const [selectedProject, setSelectedProject] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('الكل');
+  const [favorites, setFavorites] = useState([]);
+
+  const categories = ['الكل', 'تقنية', 'زراعة', 'حرف', 'ثقافة', 'تعليم', 'صحة'];
+
+  // ----- تحميل من localStorage عند بدء التطبيق -----
+  useEffect(() => {
+    const savedUser = localStorage.getItem('currentUser');
+    const savedDarkMode = localStorage.getItem('darkMode');
+    const savedProjects = localStorage.getItem('localProjects');
+    const savedFavorites = localStorage.getItem('favorites');
+
+    if (savedUser) setCurrentUser(JSON.parse(savedUser));
+    if (savedDarkMode) setDarkMode(JSON.parse(savedDarkMode));
+    if (savedFavorites) setFavorites(JSON.parse(savedFavorites));
+    if (savedProjects) {
+      const localProjects = JSON.parse(savedProjects);
+      // merge local with initial (keep unique ids)
+      const map = new Map();
+      [...initialProjects, ...localProjects].forEach(p => map.set(p.id, p));
+      setProjects(Array.from(map.values()));
+    } else {
+      setProjects(initialProjects);
+    }
+  }, []);
+
+  // حفظ بعض الحالات
+  useEffect(() => {
+    localStorage.setItem('darkMode', JSON.stringify(darkMode));
+  }, [darkMode]);
+
+  useEffect(() => {
+    const localProjects = projects.filter(p => !initialProjects.find(ip => ip.id === p.id));
+    localStorage.setItem('localProjects', JSON.stringify(localProjects));
+  }, [projects]);
+
+  useEffect(() => {
+    localStorage.setItem('favorites', JSON.stringify(favorites));
+  }, [favorites]);
+
+  // ------------- نظام الاشعارات المحلي -------------
+  const addNotificationToUser = (userId, notification) => {
+    const users = JSON.parse(localStorage.getItem('users') || '[]');
+    const updated = users.map(u => {
+      if (u.id === userId) {
+        const nots = u.notifications || [];
+        return { ...u, notifications: [{ id: Date.now(), icon: notification.icon || '🔔', ...notification, read: false }, ...nots] };
+      }
+      return u;
+    });
+    localStorage.setItem('users', JSON.stringify(updated));
+
+    // إذا المستخدم الحالي هو المستهدف حدّثه فوراً
+    if (currentUser && currentUser.id === userId) {
+      const updatedCurrent = updated.find(u => u.id === userId);
+      setCurrentUser(updatedCurrent);
+      localStorage.setItem('currentUser', JSON.stringify(updatedCurrent));
+    }
+  };
+
+  // مساعدة للحصول على مستخدم حسب الاسم (مستخدم في الأماكن التي نعرف بها owner by name)
+  const findUserByName = (name) => {
+    const users = JSON.parse(localStorage.getItem('users') || '[]');
+    return users.find(u => u.name === name);
+  };
+
+  // ------------- وظائف المشاركة و المكافآت -------------
+  const getProjectUrl = (projectId) => {
+    const base = window.location.origin;
+    return `${base}/project/${projectId}`;
+  };
+
+  const openShareWindow = (url) => {
+    window.open(url, '_blank', 'noopener,noreferrer,width=600,height=500');
+  };
+
+  const registerShare = (projectId, channel) => {
+    // تحديث shareCounts في المشروع
+    const updatedProjects = projects.map(p => {
+      if (p.id === projectId) {
+        const counts = { ...(p.shareCounts || { whatsapp:0,twitter:0,facebook:0,copy:0 }) };
+        counts[channel] = (counts[channel] || 0) + 1;
+        return { ...p, shareCounts: counts };
+      }
+      return p;
+    });
+    setProjects(updatedProjects);
+
+    // حفظ مشاريع محلية
+    const localProjects = updatedProjects.filter(pr => !initialProjects.find(ip => ip.id === pr.id));
+    localStorage.setItem('localProjects', JSON.stringify(localProjects));
+
+    // منح نقاط للمستخدم الحالي (مثلاً 5 نقاط لكل مشاركة)
+    if (currentUser) {
+      const reward = 5;
+      const users = JSON.parse(localStorage.getItem('users') || '[]');
+      const updatedUsers = users.map(u => {
+        if (u.id === currentUser.id) {
+          const newPoints = (u.points || 0) + reward;
+          return { ...u, points: newPoints };
+        }
+        return u;
+      });
+      localStorage.setItem('users', JSON.stringify(updatedUsers));
+      const updatedCurrent = updatedUsers.find(u => u.id === currentUser.id);
+      setCurrentUser(updatedCurrent);
+      localStorage.setItem('currentUser', JSON.stringify(updatedCurrent));
+
+      // اخطار / اشعار للمستخدم حول النقاط
+      addNotificationToUser(currentUser.id, {
+        title: '✅ شكراً للمشاركة!',
+        message: `حصلت على ${reward} نقطة لمشاركتك مشروع "${projects.find(p=>p.id===projectId)?.title || ''}".`,
+        icon: '🎁',
+        link: { view: 'project-details', projectId }
+      });
+    }
+  };
+
+  // ------------- المفضلة والتصفية -------------
+  const toggleFavorite = (projectId) => {
+    if (!currentUser) {
+      alert('يرجى تسجيل الدخول أولاً');
+      return;
+    }
+    setFavorites(prev => prev.includes(projectId) ? prev.filter(id => id !== projectId) : [...prev, projectId]);
+  };
+  const isFavorite = (projectId) => favorites.includes(projectId);
+
+  const filteredProjects = projects.filter(project => {
+    const matchesSearch = project.title.includes(searchTerm) || project.description.includes(searchTerm);
+    const matchesCategory = selectedCategory === 'الكل' || project.category === selectedCategory;
+    return matchesSearch && matchesCategory;
+  });
+
+  // ------------- مكون النجوم للتقييم -------------
+  const StarRating = ({ rating, onRate, readonly = false, size = 'medium' }) => {
+    const [hover, setHover] = useState(0);
+    const sizeClasses = { small: 'w-4 h-4', medium: 'w-6 h-6', large: 'w-8 h-8' };
+    return (
+      <div className="flex gap-1">
+        {[1,2,3,4,5].map(star => (
+          <button
+            key={star}
+            type="button"
+            disabled={readonly}
+            onClick={() => !readonly && onRate && onRate(star)}
+            onMouseEnter={() => !readonly && setHover(star)}
+            onMouseLeave={() => !readonly && setHover(0)}
+            className={`transition-all ${!readonly && 'cursor-pointer hover:scale-110'} ${readonly && 'cursor-default'}`}
+          >
+            <Star className={`${sizeClasses[size]} ${
+              star <= (hover || rating)
+                ? 'fill-yellow-400 text-yellow-400'
+                : darkMode ? 'text-gray-600' : 'text-gray-300'
+            }`} />
+          </button>
+        ))}
+      </div>
+    );
+  };
+
+  // ----------------- Charts components -----------------
+  const DonationsLineChart = ({ data }) => {
+    const chartData = (data || []).map(d => ({ date: d.date, total: d.total }));
+    return (
+      <div className="w-full h-64">
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={chartData} margin={{ top: 10, right: 16, left: 0, bottom: 0 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#2d3748' : '#e6edf3'} />
+            <XAxis dataKey="date" stroke={darkMode ? '#cbd5e1' : '#374151'} />
+            <YAxis stroke={darkMode ? '#cbd5e1' : '#374151'} />
+            <Tooltip wrapperStyle={{ background: darkMode ? '#1f2937' : '#fff', borderRadius: 6 }} />
+            <Line type="monotone" dataKey="total" stroke={CHART_COLORS[0]} strokeWidth={3} dot={{ r: 3 }} activeDot={{ r: 6 }} />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+    );
+  };
+
+  const ProgressPie = ({ raised, goal }) => {
+    const remaining = Math.max(goal - raised, 0);
+    const pieData = [
+      { name: 'مجموع تمّ', value: raised },
+      { name: 'المتبقي', value: remaining }
+    ];
+    return (
+      <div className="w-full h-56 flex items-center justify-center">
+        <ResponsiveContainer width="100%" height={200}>
+          <PieChart>
+            <Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={4}>
+              {pieData.map((entry, idx) => (
+                <Cell key={`cell-${idx}`} fill={idx === 0 ? CHART_COLORS[0] : '#e5e7eb'} />
+              ))}
+            </Pie>
+            <Legend verticalAlign="bottom" height={36} wrapperStyle={{ color: darkMode ? '#e5e7eb' : '#374151' }} />
+            <Tooltip wrapperStyle={{ background: darkMode ? '#1f2937' : '#fff', borderRadius: 6 }} />
+          </PieChart>
+        </ResponsiveContainer>
+      </div>
+    );
+  };
+
+  // ------------- صفحة تسجيل الدخول/التسجيل -------------
+  const LoginPage = () => {
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [isSignup, setIsSignup] = useState(false);
+    const [userType, setUserType] = useState('user');
+
+    const handleAuth = (e) => {
+      e.preventDefault();
+      if (isSignup) {
+        const users = JSON.parse(localStorage.getItem('users') || '[]');
+        // أضف points و notifications في ملف المستخدم
+        const newUser = { id: Date.now(), email, password, type: userType, name: email.split('@')[0], notifications: [], points: 0 };
+        users.push(newUser);
+        localStorage.setItem('users', JSON.stringify(users));
+        localStorage.setItem('currentUser', JSON.stringify(newUser));
+        setCurrentUser(newUser);
+        setView('home');
+      } else {
+        const users = JSON.parse(localStorage.getItem('users') || '[]');
+        const user = users.find(u => u.email === email && u.password === password);
+        if (user) {
+          localStorage.setItem('currentUser', JSON.stringify(user));
+          setCurrentUser(user);
+          setView('home');
+        } else {
+          alert('بيانات الدخول غير صحيحة');
+        }
+      }
+    };
+
+    return (
+      <div className={`min-h-screen flex items-center justify-center ${darkMode ? 'bg-gray-900' : 'bg-gradient-to-br from-blue-50 to-indigo-100'}`}>
+        <div className={`max-w-md w-full mx-4 p-8 rounded-2xl shadow-2xl ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
+          <div className="text-center mb-8">
+            <h2 className={`text-3xl font-bold mb-2 ${darkMode ? 'text-white' : 'text-gray-800'}`}>{isSignup ? 'إنشاء حساب جديد' : 'تسجيل الدخول'}</h2>
+            <p className={darkMode ? 'text-gray-400' : 'text-gray-600'}>{isSignup ? 'انضم إلى منصة دعم المشاريع' : 'مرحباً بعودتك'}</p>
+          </div>
+
+          <form onSubmit={handleAuth} className="space-y-6">
+            <div>
+              <label className={`block mb-2 font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>البريد الإلكتروني</label>
+              <input type="email" value={email} onChange={(e)=>setEmail(e.target.value)} className={`w-full px-4 py-3 rounded-lg border-2 focus:outline-none focus:border-blue-500 ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`} required />
+            </div>
+
+            <div>
+              <label className={`block mb-2 font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>كلمة المرور</label>
+              <input type="password" value={password} onChange={(e)=>setPassword(e.target.value)} className={`w-full px-4 py-3 rounded-lg border-2 focus:outline-none focus:border-blue-500 ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`} required />
+            </div>
+
+            {isSignup && (
+              <div>
+                <label className={`block mb-2 font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>نوع الحساب</label>
+                <div className="flex gap-4">
+                  <label className="flex items-center gap-2 cursor-pointer"><input type="radio" value="user" checked={userType==='user'} onChange={(e)=>setUserType(e.target.value)} className="w-4 h-4" /> <span className={darkMode ? 'text-gray-300' : 'text-gray-700'}>مستخدم عادي</span></label>
+                  <label className="flex items-center gap-2 cursor-pointer"><input type="radio" value="owner" checked={userType==='owner'} onChange={(e)=>setUserType(e.target.value)} className="w-4 h-4" /> <span className={darkMode ? 'text-gray-300' : 'text-gray-700'}>صاحب مشروع</span></label>
+                </div>
+              </div>
+            )}
+
+            <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition-colors">{isSignup ? 'إنشاء حساب' : 'تسجيل الدخول'}</button>
+          </form>
+
+          <div className="mt-6 text-center">
+            <button onClick={() => setIsSignup(!isSignup)} className={`text-blue-600 hover:text-blue-700 font-semibold ${darkMode && 'text-blue-400'}`}>{isSignup ? 'لديك حساب؟ سجل الدخول' : 'ليس لديك حساب؟ سجل الآن'}</button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // ------------- مكون البطاقة (ProjectCard) -------------
+  const ProjectCard = ({ project, showFavoriteButton = true }) => {
+    const progress = (project.raised / project.goal) * 100;
+    return (
+      <div className={`rounded-xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 ${darkMode ? 'bg-gray-800' : 'bg-white'} relative`}>
+        {showFavoriteButton && (
+          <button onClick={(e)=>{ e.stopPropagation(); toggleFavorite(project.id); }} className={`absolute top-4 left-4 z-10 p-2 rounded-full backdrop-blur-sm transition-all ${isFavorite(project.id) ? 'bg-red-500 text-white scale-110' : 'bg-white/80 text-gray-600 hover:bg-white'}`}>
+            <Heart className={`w-5 h-5 ${isFavorite(project.id) ? 'fill-current' : ''}`} />
+          </button>
+        )}
+
+        <div className="cursor-pointer" onClick={() => { setSelectedProject(project); setView('project-details'); }}>
+          <div className="relative h-48 overflow-hidden">
+            <img src={project.image} alt={project.title} className="w-full h-full object-cover hover:scale-110 transition-transform duration-300" />
+            <div className="absolute top-4 right-4 bg-blue-600 text-white px-3 py-1 rounded-full text-sm font-semibold">{project.category}</div>
+          </div>
+
+          <div className="p-6">
+            <h3 className={`text-xl font-bold mb-2 ${darkMode ? 'text-white' : 'text-gray-800'}`}>{project.title}</h3>
+
+            <div className="flex items-center gap-2 mb-3">
+              <StarRating rating={project.averageRating || 0} readonly size="small" />
+              <span className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>{project.averageRating > 0 ? `${project.averageRating.toFixed(1)} (${project.ratings?.length || 0} تقييم)` : 'لا توجد تقييمات'}</span>
+            </div>
+
+            <p className={`mb-4 line-clamp-2 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>{project.description}</p>
+
+            <div className="mb-4">
+              <div className="flex justify-between mb-2 text-sm">
+                <span className={darkMode ? 'text-gray-400' : 'text-gray-600'}>التقدم</span>
+                <span className={`font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>{progress.toFixed(0)}%</span>
+              </div>
+              <div className={`w-full h-2 rounded-full ${darkMode ? 'bg-gray-700' : 'bg-gray-200'}`}>
+                <div className="h-full bg-gradient-to-r from-blue-500 to-blue-600 rounded-full transition-all duration-500" style={{ width: `${Math.min(progress,100)}%` }} />
+              </div>
+            </div>
+
+            <div className="flex justify-between items-center text-sm mb-4">
+              <div>
+                <span className={`font-bold text-lg ${darkMode ? 'text-white' : 'text-gray-800'}`}>{project.raised.toLocaleString()} ر.س</span>
+                <span className={darkMode ? 'text-gray-400' : 'text-gray-600'}>{' '}من {project.goal.toLocaleString()}</span>
+              </div>
+            </div>
+
+            <div className="flex justify-between pt-4 border-t border-gray-200 dark:border-gray-700">
+              <div className="flex items-center gap-2"><Users className="w-4 h-4 text-blue-600" /><span className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>{project.backers} داعم</span></div>
+              <div className="flex items-center gap-2"><Calendar className="w-4 h-4 text-blue-600" /><span className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>{project.daysLeft} يوم متبقي</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // ------------- صفحة تفاصيل المشروع (مع مشاركة اجتماعية + رسوم) -------------
+  const ProjectDetails = () => {
+    const [donationAmount, setDonationAmount] = useState('');
+    const [comment, setComment] = useState('');
+    const [comments, setComments] = useState([]);
+    const [userRating, setUserRating] = useState(0);
+    const [showRatingModal, setShowRatingModal] = useState(false);
+    const [updateTitle, setUpdateTitle] = useState('');
+    const [updateContent, setUpdateContent] = useState('');
+
+    useEffect(() => {
+      if (!selectedProject) return;
+      setComments([]);
+      if (currentUser && selectedProject.ratings) {
+        const existingRating = selectedProject.ratings.find(r => r.userId === currentUser.id);
+        if (existingRating) setUserRating(existingRating.rating);
+      } else {
+        setUserRating(0);
+      }
+    }, [selectedProject, currentUser]);
+
+    if (!selectedProject) return <div className={`min-h-screen ${darkMode ? 'bg-gray-900' : 'bg-gray-50'}`}><div className="max-w-6xl mx-auto p-8">لم يتم اختيار مشروع.</div></div>;
+
+    const progress = (selectedProject.raised / selectedProject.goal) * 100;
+
+    // تبرع مع إشعارات و backersList و تحديث donationsHistory
+    const handleDonate = () => {
+      if (!currentUser) { alert('يرجى تسجيل الدخول أولاً'); return; }
+      const amount = parseInt(donationAmount);
+      if (isNaN(amount) || amount <= 0) return alert('أدخل مبلغ صالح');
+
+      const updatedProjects = projects.map(p => {
+        if (p.id === selectedProject.id) {
+          const backersSet = new Set(p.backersList || []);
+          backersSet.add(currentUser.id);
+          const newBackersList = Array.from(backersSet);
+          const newRaised = p.raised + amount;
+          // append donationsHistory entry
+          const newHistory = [...(p.donationsHistory || []), { date: new Date().toISOString().slice(0,10), amount, total: newRaised }];
+
+          const updated = { ...p, raised: newRaised, backers: p.backers + 1, backersList: newBackersList, donationsHistory: newHistory };
+
+          // إشعار عند الوصول للهدف (مرة واحدة)
+          if (p.raised < p.goal && newRaised >= p.goal) {
+            const ownerUser = findUserByName(p.owner);
+            if (ownerUser) {
+              addNotificationToUser(ownerUser.id, {
+                title: '🏁 مشروعك وصل إلى الهدف!',
+                message: `مشروع "${p.title}" تحقق هدفه (${p.goal.toLocaleString()} ر.س).`,
+                icon: '🎉',
+                link: { view: 'project-details', projectId: p.id }
+              });
+            }
+            // إشعار لجميع الداعمين
+            const users = JSON.parse(localStorage.getItem('users') || '[]');
+            newBackersList.forEach(uid => {
+              addNotificationToUser(uid, {
+                title: '🎉 مشروع مدعوم وصل للهدف',
+                message: `المشروع "${p.title}" الذي دعمتَه وصل للهدف!`,
+                icon: '🎉',
+                link: { view: 'project-details', projectId: p.id }
+              });
+            });
+          }
+
+          return updated;
+        }
+        return p;
+      });
+
+      setProjects(updatedProjects);
+      const updatedProject = updatedProjects.find(p => p.id === selectedProject.id);
+      setSelectedProject(updatedProject);
+      alert(`شكراً لدعمك بمبلغ ${amount} ر.س!`);
+      setDonationAmount('');
+      if (userRating === 0) setTimeout(() => setShowRatingModal(true), 1000);
+    };
+
+    // تعليق -> إشعار للمالك
+    const handleComment = () => {
+      if (!currentUser) { alert('يرجى تسجيل الدخول أولاً'); return; }
+      if (!comment.trim()) return;
+      const newComment = { id: Date.now(), user: currentUser.name, text: comment, date: new Date().toLocaleDateString('ar-SA') };
+      setComments(prev => [newComment, ...prev]);
+      setComment('');
+
+      const ownerUser = findUserByName(selectedProject.owner);
+      if (ownerUser) {
+        addNotificationToUser(ownerUser.id, {
+          title: '💬 تعليق جديد على مشروعك',
+          message: `${currentUser.name} علّق على مشروع "${selectedProject.title}".`,
+          icon: '💬',
+          link: { view: 'project-details', projectId: selectedProject.id }
+        });
+      }
+    };
+
+    // تقييم -> إشعار للمالك
+    const handleRating = (rating) => {
+      if (!currentUser) { alert('يرجى تسجيل الدخول أولاً'); return; }
+      const updatedProjects = projects.map(p => {
+        if (p.id === selectedProject.id) {
+          const filteredRatings = (p.ratings || []).filter(r => r.userId !== currentUser.id);
+          const newRatings = [...filteredRatings, { userId: currentUser.id, rating, userName: currentUser.name }];
+          const average = newRatings.reduce((sum, r) => sum + r.rating, 0) / newRatings.length;
+          return { ...p, ratings: newRatings, averageRating: average };
+        }
+        return p;
+      });
+      setProjects(updatedProjects);
+      const updatedProject = updatedProjects.find(p => p.id === selectedProject.id);
+      setSelectedProject(updatedProject);
+      setUserRating(rating);
+      setShowRatingModal(false);
+
+      const ownerUser = findUserByName(selectedProject.owner);
+      if (ownerUser) {
+        addNotificationToUser(ownerUser.id, {
+          title: '⭐ تقييم جديد',
+          message: `${currentUser.name} قيّم مشروع "${selectedProject.title}" بـ ${rating} نجوم.`,
+          icon: '⭐',
+          link: { view: 'project-details', projectId: selectedProject.id }
+        });
+      }
+      alert('شكراً لتقييمك!');
+    };
+
+    // نشر تحديث من صاحب المشروع -> إشعارات للداعمين
+    const postUpdate = () => {
+      if (!currentUser || currentUser.name !== selectedProject.owner) {
+        alert('فقط صاحب المشروع يمكنه نشر تحديثات');
+        return;
+      }
+      if (!updateTitle.trim() || !updateContent.trim()) return alert('أدخل عنوان ومحتوى للتحديث');
+
+      const updatedProjects = projects.map(p => {
+        if (p.id === selectedProject.id) {
+          const newUpdate = { id: Date.now(), title: updateTitle, content: updateContent, date: new Date().toLocaleDateString('ar-SA') };
+          const updates = [newUpdate, ...(p.updates || [])];
+
+          // إشعار الداعمين
+          (p.backersList || []).forEach(uid => {
+            addNotificationToUser(uid, {
+              title: `📝 تحديث جديد على ${p.title}`,
+              message: `${p.owner} نشر تحديث: ${updateTitle}`,
+              icon: '📝',
+              link: { view: 'project-details', projectId: p.id }
+            });
+          });
+
+          return { ...p, updates };
+        }
+        return p;
+      });
+
+      setProjects(updatedProjects);
+      setSelectedProject(updatedProjects.find(p => p.id === selectedProject.id));
+      setUpdateTitle('');
+      setUpdateContent('');
+      alert('تم نشر التحديث');
+    };
+
+    return (
+      <div className={`min-h-screen ${darkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
+        <div className="max-w-6xl mx-auto px-4 py-8">
+          <button onClick={() => setView('home')} className={`mb-6 px-6 py-2 rounded-lg font-semibold ${darkMode ? 'bg-gray-800 text-white hover:bg-gray-700' : 'bg-white hover:bg-gray-100'}`}>← العودة للرئيسية</button>
+
+          <div className="grid md:grid-cols-3 gap-8">
+            <div className="md:col-span-2">
+              <img src={selectedProject.image} alt={selectedProject.title} className="w-full h-96 object-cover rounded-2xl mb-6" />
+              <div className={`p-6 rounded-2xl mb-6 ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
+                <div className="flex items-center gap-3 mb-4">
+                  <span className="text-4xl">{selectedProject.ownerAvatar}</span>
+                  <div>
+                    <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>صاحب المشروع</p>
+                    <p className={`font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>{selectedProject.owner}</p>
+                  </div>
+                </div>
+
+                <h1 className={`text-3xl font-bold mb-4 ${darkMode ? 'text-white' : 'text-gray-800'}`}>{selectedProject.title}</h1>
+
+                <div className="flex gap-4 mb-6">
+                  <span className="px-4 py-2 bg-blue-100 text-blue-600 rounded-full text-sm font-semibold">{selectedProject.category}</span>
+                </div>
+
+                <p className={`text-lg leading-relaxed mb-6 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>{selectedProject.description}</p>
+
+                {/* Charts area (تمّت الإضافة هنا) */}
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                    <h3 className={`font-semibold mb-2 ${darkMode ? 'text-white' : 'text-gray-800'}`}>تطور التبرعات (خطّي)</h3>
+                    <DonationsLineChart data={selectedProject.donationsHistory || []} />
+                  </div>
+
+                  <div className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                    <h3 className={`font-semibold mb-2 ${darkMode ? 'text-white' : 'text-gray-800'}`}>نسبة التقدم</h3>
+                    <ProgressPie raised={selectedProject.raised} goal={selectedProject.goal} />
+                    <div className="mt-2 text-center">
+                      <div className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>{selectedProject.raised.toLocaleString()} ر.س</div>
+                      <div className={darkMode ? 'text-gray-300' : 'text-gray-600'}>من {selectedProject.goal.toLocaleString()} — {progress.toFixed(0)}%</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* --- قسم المشاركة الاجتماعية --- */}
+                <div className="mt-6 p-4 rounded-lg border flex flex-col gap-3">
+                  <h4 className={`${darkMode ? 'text-white' : 'text-gray-800'} font-bold`}>مشاركة المشروع</h4>
+
+                  <div className="flex flex-wrap gap-3">
+                    {/* واتساب */}
+                    <button
+                      onClick={() => {
+                        const text = encodeURIComponent(`${selectedProject.title} - ${selectedProject.description}\n${getProjectUrl(selectedProject.id)}`);
+                        openShareWindow(`https://api.whatsapp.com/send?text=${text}`);
+                        registerShare(selectedProject.id, 'whatsapp');
+                      }}
+                      className="px-4 py-2 rounded-lg bg-green-500 text-white font-semibold flex items-center gap-2"
+                      title="مشاركة على واتساب"
+                    >
+                      📱 واتساب
+                      <span className="text-sm opacity-90">({selectedProject.shareCounts?.whatsapp || 0})</span>
+                    </button>
+
+                    {/* تويتر */}
+                    <button
+                      onClick={() => {
+                        const url = encodeURIComponent(getProjectUrl(selectedProject.id));
+                        const text = encodeURIComponent(`${selectedProject.title} — دعم مشاريع صغيرة`);
+                        openShareWindow(`https://twitter.com/intent/tweet?text=${text}&url=${url}`);
+                        registerShare(selectedProject.id, 'twitter');
+                      }}
+                      className="px-4 py-2 rounded-lg bg-blue-500 text-white font-semibold flex items-center gap-2"
+                      title="مشاركة على تويتر"
+                    >
+                      🐦 تويتر
+                      <span className="text-sm opacity-90">({selectedProject.shareCounts?.twitter || 0})</span>
+                    </button>
+
+                    {/* فيسبوك */}
+                    <button
+                      onClick={() => {
+                        const url = encodeURIComponent(getProjectUrl(selectedProject.id));
+                        openShareWindow(`https://www.facebook.com/sharer/sharer.php?u=${url}`);
+                        registerShare(selectedProject.id, 'facebook');
+                      }}
+                      className="px-4 py-2 rounded-lg bg-blue-800 text-white font-semibold flex items-center gap-2"
+                      title="مشاركة على فيسبوك"
+                    >
+                      📘 فيسبوك
+                      <span className="text-sm opacity-90">({selectedProject.shareCounts?.facebook || 0})</span>
+                    </button>
+
+                    {/* نسخ رابط */}
+                    <button
+                      onClick={() => {
+                        const url = getProjectUrl(selectedProject.id);
+                        navigator.clipboard.writeText(url).then(() => {
+                          registerShare(selectedProject.id, 'copy');
+                          alert('تم نسخ رابط المشروع إلى الحافظة');
+                        }).catch(() => alert('فشل نسخ الرابط'));
+                      }}
+                      className="px-4 py-2 rounded-lg bg-gray-200 text-gray-800 font-semibold flex items-center gap-2"
+                      title="نسخ الرابط"
+                    >
+                      🔗 نسخ الرابط
+                      <span className="text-sm opacity-90">({selectedProject.shareCounts?.copy || 0})</span>
+                    </button>
+                  </div>
+
+                  {/* إحصائيات المشاركة الإجمالية للمشروع */}
+                  <div className="mt-3 text-sm text-gray-600">
+                    إجمالي المشاركات: {(Object.values(selectedProject.shareCounts || {}).reduce((s,v)=>s+v,0))}
+                  </div>
+                </div>
+
+                {/* التحديثات */}
+                <div className="mb-6 mt-6">
+                  <h3 className={`text-lg font-bold mb-3 ${darkMode ? 'text-white' : 'text-gray-800'}`}>تحديثات المشروع</h3>
+                  {selectedProject.updates && selectedProject.updates.length === 0 && <p className={darkMode ? 'text-gray-400' : 'text-gray-600'}>لا توجد تحديثات بعد</p>}
+                  {selectedProject.updates && selectedProject.updates.map(u => (
+                    <div key={u.id} className={`p-3 rounded-lg mb-3 ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <div className={`font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>{u.title}</div>
+                          <div className={darkMode ? 'text-gray-300' : 'text-gray-600'}>{u.content}</div>
+                        </div>
+                        <div className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{u.date}</div>
+                      </div>
+                    </div>
+                  ))}
+
+                  {/* نموذج نشر التحديث لصاحب المشروع */}
+                  {currentUser && currentUser.name === selectedProject.owner && (
+                    <div className="mt-4 p-4 rounded-lg border">
+                      <input value={updateTitle} onChange={(e)=>setUpdateTitle(e.target.value)} placeholder="عنوان التحديث" className="w-full mb-2 px-3 py-2 rounded-lg border" />
+                      <textarea value={updateContent} onChange={(e)=>setUpdateContent(e.target.value)} placeholder="محتوى التحديث" className="w-full mb-2 px-3 py-2 rounded-lg border" rows={3} />
+                      <button onClick={postUpdate} className="px-4 py-2 bg-blue-600 text-white rounded-lg">نشر تحديث</button>
+                    </div>
+                  )}
+                </div>
+
+                {/* التقييمات */}
+                <div className={`p-4 rounded-lg border-2 ${darkMode ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'}`}>
+                  <h3 className={`text-lg font-bold mb-3 flex items-center gap-2 ${darkMode ? 'text-white' : 'text-gray-800'}`}><Star className="w-5 h-5 text-yellow-400" /> التقييمات</h3>
+                  <div className="flex items-center gap-4 mb-4">
+                    <div className="text-center">
+                      <div className={`text-4xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>{selectedProject.averageRating > 0 ? selectedProject.averageRating.toFixed(1) : '0.0'}</div>
+                      <StarRating rating={selectedProject.averageRating || 0} readonly size="small" />
+                      <div className={`text-sm mt-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>{selectedProject.ratings?.length || 0} تقييم</div>
+                    </div>
+
+                    <div className="flex-1">
+                      {currentUser ? (
+                        <div>
+                          <p className={`text-sm mb-2 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>{userRating > 0 ? 'تقييمك:' : 'قيّم هذا المشروع:'}</p>
+                          <StarRating rating={userRating} onRate={handleRating} size="large" />
+                          {userRating > 0 && <p className={`text-xs mt-2 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>يمكنك تغيير تقييمك في أي وقت</p>}
+                        </div>
+                      ) : (
+                        <button onClick={() => setView('login')} className="text-blue-600 hover:text-blue-700 font-semibold text-sm">سجل الدخول لتقييم المشروع</button>
+                      )}
+                    </div>
+                  </div>
+
+                  {selectedProject.ratings && selectedProject.ratings.length > 0 && (
+                    <div className="mt-4 space-y-2">
+                      <p className={`text-sm font-semibold mb-2 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>آراء المستخدمين:</p>
+                      {selectedProject.ratings.slice(-5).reverse().map((r, index) => (
+                        <div key={index} className={`flex items-center gap-3 p-2 rounded ${darkMode ? 'bg-gray-600' : 'bg-white'}`}>
+                          <span className={`font-semibold text-sm ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>{r.userName}</span>
+                          <StarRating rating={r.rating} readonly size="small" />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* التعليقات */}
+              <div className={`p-6 rounded-2xl ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
+                <h3 className={`text-xl font-bold mb-4 flex items-center gap-2 ${darkMode ? 'text-white' : 'text-gray-800'}`}><MessageCircle className="w-5 h-5" /> التعليقات</h3>
+                {currentUser && (
+                  <div className="mb-6">
+                    <textarea value={comment} onChange={(e)=>setComment(e.target.value)} placeholder="اكتب تعليقك..." className={`w-full p-4 rounded-lg border-2 focus:outline-none focus:border-blue-500 ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`} rows="3" />
+                    <button onClick={handleComment} className="mt-2 px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold">إضافة تعليق</button>
+                  </div>
+                )}
+
+                <div className="space-y-4">
+                  {comments.map(c => (
+                    <div key={c.id} className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                      <div className="flex justify-between items-start mb-2">
+                        <span className={`font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>{c.user}</span>
+                        <span className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>{c.date}</span>
+                      </div>
+                      <p className={darkMode ? 'text-gray-300' : 'text-gray-700'}>{c.text}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* الشريط الجانبي للتمويل والإحصاءات */}
+            <div>
+              <div className={`p-6 rounded-2xl sticky top-4 ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
+                <div className="mb-6">
+                  <div className="flex justify-between mb-2"><span className={darkMode ? 'text-gray-400' : 'text-gray-600'}>تم جمع</span><span className={`font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>{progress.toFixed(0)}%</span></div>
+                  <div className={`w-full h-3 rounded-full ${darkMode ? 'bg-gray-700' : 'bg-gray-200'}`}><div className="h-full bg-gradient-to-r from-blue-500 to-blue-600 rounded-full" style={{ width: `${Math.min(progress,100)}%` }} /></div>
+                </div>
+
+                <div className="space-y-4 mb-6">
+                  <div>
+                    <span className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>{selectedProject.raised.toLocaleString()} ر.س</span>
+                    <p className={darkMode ? 'text-gray-400' : 'text-gray-600'}>من {selectedProject.goal.toLocaleString()} ر.س</p>
+                  </div>
+
+                  <div className="flex items-center gap-2"><Users className="w-5 h-5 text-blue-600" /><span className={darkMode ? 'text-gray-300' : 'text-gray-700'}>{selectedProject.backers} داعم</span></div>
+                  <div className="flex items-center gap-2"><Calendar className="w-5 h-5 text-blue-600" /><span className={darkMode ? 'text-gray-300' : 'text-gray-700'}>{selectedProject.daysLeft} يوم متبقي</span></div>
+                </div>
+
+                {currentUser ? (
+                  <div className="space-y-4">
+                    <input type="number" value={donationAmount} onChange={(e)=>setDonationAmount(e.target.value)} placeholder="أدخل المبلغ بالريال" className={`w-full px-4 py-3 rounded-lg border-2 focus:outline-none focus:border-blue-500 ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`} />
+                    <button onClick={handleDonate} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-lg flex items-center justify-center gap-2 transition-colors"><Heart className="w-5 h-5" /> ادعم المشروع</button>
+                  </div>
+                ) : (
+                  <button onClick={()=>setView('login')} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-lg">سجل الدخول للدعم</button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {showRatingModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className={`max-w-md w-full p-8 rounded-2xl ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
+              <h3 className={`text-2xl font-bold mb-4 text-center ${darkMode ? 'text-white' : 'text-gray-800'}`}>شكراً لدعمك! 🎉</h3>
+              <p className={`text-center mb-6 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>هل يمكنك تقييم هذا المشروع؟</p>
+              <div className="flex justify-center mb-6"><StarRating rating={0} onRate={handleRating} size="large" /></div>
+              <button onClick={() => setShowRatingModal(false)} className={`w-full py-2 rounded-lg ${darkMode ? 'bg-gray-700 hover:bg-gray-600 text-white' : 'bg-gray-200 hover:bg-gray-300 text-gray-800'}`}>لاحقاً</button>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // ------------- صفحة المفضلة -------------
+  const FavoritesPage = () => {
+    const favoriteProjects = projects.filter(p => favorites.includes(p.id));
+    return (
+      <div className={`min-h-screen ${darkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
+        <div className="max-w-7xl mx-auto px-4 py-8">
+          <div className="flex items-center gap-3 mb-8">
+            <Heart className="w-8 h-8 text-red-500" />
+            <h1 className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>مشاريعي المفضلة</h1>
+            <span className={`text-lg ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>({favoriteProjects.length})</span>
+          </div>
+
+          {favoriteProjects.length === 0 ? (
+            <div className="text-center py-20">
+              <Heart className={`w-24 h-24 mx-auto mb-4 ${darkMode ? 'text-gray-700' : 'text-gray-300'}`} />
+              <h3 className={`text-2xl font-bold mb-2 ${darkMode ? 'text-white' : 'text-gray-800'}`}>لا توجد مشاريع مفضلة بعد</h3>
+              <p className={darkMode ? 'text-gray-400' : 'text-gray-600'}>ابدأ بإضافة المشاريع التي تهمك إلى المفضلة</p>
+              <button onClick={()=>setView('home')} className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold">تصفح المشاريع</button>
+            </div>
+          ) : (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {favoriteProjects.map(project => <ProjectCard key={project.id} project={project} />)}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  // ------------- لوحة تحكم أصحاب المشاريع -------------
+  const DashboardPage = () => {
+    const userProjects = projects.filter(p => p.owner === currentUser?.name);
+    const totalRaised = userProjects.reduce((sum,p)=>sum+p.raised,0);
+    const totalBackers = userProjects.reduce((sum,p)=>sum+p.backers,0);
+    const averageProgress = userProjects.length > 0 ? userProjects.reduce((sum,p)=>sum + (p.raised / p.goal * 100),0)/userProjects.length : 0;
+
+    return (
+      <div className={`min-h-screen ${darkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
+        <div className="max-w-7xl mx-auto px-4 py-8">
+          <h1 className={`text-3xl font-bold mb-8 ${darkMode ? 'text-white' : 'text-gray-800'}`}>لوحة التحكم</h1>
+          <div className="grid md:grid-cols-4 gap-6 mb-8">
+            <div className={`p-6 rounded-xl ${darkMode ? 'bg-gray-800' : 'bg-white'} shadow-lg`}>
+              <div className="flex items-center justify-between mb-2"><span className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>المشاريع النشطة</span><Target className="w-5 h-5 text-blue-600" /></div>
+              <div className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>{userProjects.length}</div>
+            </div>
+
+            <div className={`p-6 rounded-xl ${darkMode ? 'bg-gray-800' : 'bg-white'} shadow-lg`}>
+              <div className="flex items-center justify-between mb-2"><span className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>إجمالي التمويل</span><DollarSign className="w-5 h-5 text-green-600" /></div>
+              <div className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>{totalRaised.toLocaleString()}</div>
+              <span className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>ر.س</span>
+            </div>
+
+            <div className={`p-6 rounded-xl ${darkMode ? 'bg-gray-800' : 'bg-white'} shadow-lg`}>
+              <div className="flex items-center justify-between mb-2"><span className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>إجمالي الداعمين</span><Users className="w-5 h-5 text-purple-600" /></div>
+              <div className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>{totalBackers}</div>
+            </div>
+
+            <div className={`p-6 rounded-xl ${darkMode ? 'bg-gray-800' : 'bg-white'} shadow-lg`}>
+              <div className="flex items-center justify-between mb-2"><span className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>متوسط التقدم</span><TrendingUp className="w-5 h-5 text-orange-600" /></div>
+              <div className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>{averageProgress.toFixed(0)}%</div>
+            </div>
+          </div>
+
+          <div className={`p-6 rounded-xl ${darkMode ? 'bg-gray-800' : 'bg-white'} shadow-lg`}>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>مشاريعي</h2>
+              <button onClick={()=>setView('add-project')} className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold"><Plus className="w-5 h-5" /> مشروع جديد</button>
+            </div>
+
+            {userProjects.length === 0 ? (
+              <div className="text-center py-12">
+                <Target className={`w-16 h-16 mx-auto mb-4 ${darkMode ? 'text-gray-700' : 'text-gray-300'}`} />
+                <p className={`text-lg mb-4 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>لم تقم بإنشاء أي مشروع بعد</p>
+                <button onClick={()=>setView('add-project')} className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold">إنشاء مشروعك الأول</button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {userProjects.map(project => {
+                  const prog = (project.raised / project.goal) * 100;
+                  return (
+                    <div key={project.id} className={`p-6 rounded-lg border-2 ${darkMode ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'} hover:border-blue-500 transition-all cursor-pointer`} onClick={()=>{ setSelectedProject(project); setView('project-details'); }}>
+                      <div className="flex items-start gap-4">
+                        <img src={project.image} alt={project.title} className="w-24 h-24 rounded-lg object-cover" />
+                        <div className="flex-1">
+                          <div className="flex items-start justify-between mb-2">
+                            <div>
+                              <h3 className={`text-xl font-bold mb-1 ${darkMode ? 'text-white' : 'text-gray-800'}`}>{project.title}</h3>
+                              <div className="flex items-center gap-3">
+                                <span className="px-3 py-1 bg-blue-100 text-blue-600 rounded-full text-xs font-semibold">{project.category}</span>
+                                <div className="flex items-center gap-1"><StarRating rating={project.averageRating || 0} readonly size="small" /><span className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>({project.ratings?.length || 0})</span></div>
+                              </div>
+                            </div>
+
+                            <div className="text-left">
+                              <div className={`text-2xl font-bold mb-1 ${darkMode ? 'text-white' : 'text-gray-800'}`}>{prog.toFixed(0)}%</div>
+                              <div className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>{project.daysLeft} يوم متبقي</div>
+                            </div>
+                          </div>
+
+                          <div className="mb-3">
+                            <div className={`w-full h-2 rounded-full ${darkMode ? 'bg-gray-600' : 'bg-gray-300'}`}><div className="h-full bg-gradient-to-r from-blue-500 to-blue-600 rounded-full" style={{ width: `${Math.min(prog,100)}%` }} /></div>
+                          </div>
+
+                          <div className="flex items-center gap-6 text-sm">
+                            <div className="flex items-center gap-2"><DollarSign className="w-4 h-4 text-green-600" /><span className={darkMode ? 'text-gray-300' : 'text-gray-700'}>{project.raised.toLocaleString()} / {project.goal.toLocaleString()} ر.س</span></div>
+                            <div className="flex items-center gap-2"><Users className="w-4 h-4 text-blue-600" /><span className={darkMode ? 'text-gray-300' : 'text-gray-700'}>{project.backers} داعم</span></div>
+                            <div className="flex items-center gap-2"><Eye className="w-4 h-4 text-purple-600" /><span className={darkMode ? 'text-gray-300' : 'text-gray-700'}>{Math.floor(Math.random()*500)+100} مشاهدة</span></div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // ------------- صفحة إضافة مشروع -------------
+  const AddProjectPage = () => {
+    const [newProject, setNewProject] = useState({
+      title: '', description: '', category: 'تقنية', goal: '', daysLeft: '', image: 'https://images.unsplash.com/photo-1553877522-43269d4ea984?w=800&auto=format&fit=crop'
+    });
+
+    const handleSubmit = (e) => {
+      e.preventDefault();
+      if (!currentUser) { alert('يرجى تسجيل الدخول'); setView('login'); return; }
+      const project = {
+        id: Date.now(),
+        ...newProject,
+        goal: parseInt(newProject.goal),
+        daysLeft: parseInt(newProject.daysLeft),
+        raised: 0,
+        backers: 0,
+        owner: currentUser.name,
+        ownerAvatar: '👤',
+        ratings: [],
+        averageRating: 0,
+        backersList: [],
+        updates: [],
+        deadlineNotifiedFor: [],
+        shareCounts: { whatsapp: 0, twitter: 0, facebook: 0, copy: 0 },
+        donationsHistory: []
+      };
+      const localProjects = JSON.parse(localStorage.getItem('localProjects') || '[]');
+      localProjects.push(project);
+      localStorage.setItem('localProjects', JSON.stringify(localProjects));
+      setProjects([...projects, project]);
+      alert('تم إضافة المشروع بنجاح!');
+      setView('home');
+    };
+
+    return (
+      <div className={`min-h-screen ${darkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
+        <div className="max-w-3xl mx-auto px-4 py-8">
+          <h1 className={`text-3xl font-bold mb-8 ${darkMode ? 'text-white' : 'text-gray-800'}`}>إضافة مشروع جديد</h1>
+          <form onSubmit={handleSubmit} className={`p-8 rounded-2xl ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
+            <div className="space-y-6">
+              <div>
+                <label className={`block mb-2 font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>عنوان المشروع</label>
+                <input type="text" value={newProject.title} onChange={(e)=>setNewProject({...newProject, title:e.target.value})} className={`w-full px-4 py-3 rounded-lg border-2 focus:outline-none focus:border-blue-500 ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`} required />
+              </div>
+
+              <div>
+                <label className={`block mb-2 font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>الوصف</label>
+                <textarea value={newProject.description} onChange={(e)=>setNewProject({...newProject, description:e.target.value})} className={`w-full px-4 py-3 rounded-lg border-2 focus:outline-none focus:border-blue-500 ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`} rows="4" required />
+              </div>
+
+              <div>
+                <label className={`block mb-2 font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>التصنيف</label>
+                <select value={newProject.category} onChange={(e)=>setNewProject({...newProject, category:e.target.value})} className={`w-full px-4 py-3 rounded-lg border-2 focus:outline-none focus:border-blue-500 ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`}>
+                  {categories.filter(cat => cat !== 'الكل').map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                </select>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-6">
+                <div>
+                  <label className={`block mb-2 font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>المبلغ المستهدف (ر.س)</label>
+                  <input type="number" value={newProject.goal} onChange={(e)=>setNewProject({...newProject, goal:e.target.value})} className={`w-full px-4 py-3 rounded-lg border-2 focus:outline-none focus:border-blue-500 ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`} required />
+                </div>
+
+                <div>
+                  <label className={`block mb-2 font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>عدد الأيام المتبقية</label>
+                  <input type="number" value={newProject.daysLeft} onChange={(e)=>setNewProject({...newProject, daysLeft:e.target.value})} className={`w-full px-4 py-3 rounded-lg border-2 focus:outline-none focus:border-blue-500 ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`} required />
+                </div>
+              </div>
+
+              <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-lg transition-colors">نشر المشروع</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    );
+  };
+
+  // ------------- صفحة إعدادات المستخدم -------------
+  const UserSettingsPage = () => {
+    const [name, setName] = useState(currentUser?.name || "");
+    const [email, setEmail] = useState(currentUser?.email || "");
+    const [password, setPassword] = useState(currentUser?.password || "");
+    const [message, setMessage] = useState("");
+
+    useEffect(() => {
+      setName(currentUser?.name || "");
+      setEmail(currentUser?.email || "");
+      setPassword(currentUser?.password || "");
+      setMessage("");
+    }, [currentUser]);
+
+    const handleSave = () => {
+      if (!name.trim() || !email.trim() || !password.trim()) { setMessage("جميع الحقول مطلوبة"); return; }
+      const users = JSON.parse(localStorage.getItem('users') || '[]');
+      const updatedUsers = users.map(u => u.id === currentUser.id ? { ...u, name, email, password } : u);
+      localStorage.setItem('users', JSON.stringify(updatedUsers));
+      const updatedUser = { ...currentUser, name, email, password };
+      localStorage.setItem('currentUser', JSON.stringify(updatedUser));
+      setCurrentUser(updatedUser);
+      setMessage("تم تحديث البيانات بنجاح ✔");
+    };
+
+    const handleDeleteAccount = () => {
+      if (!window.confirm("هل تريد بالفعل حذف حسابك؟ هذا الإجراء لا يمكن التراجع عنه.")) return;
+      const users = JSON.parse(localStorage.getItem('users') || '[]');
+      const remaining = users.filter(u => u.id !== currentUser.id);
+      localStorage.setItem('users', JSON.stringify(remaining));
+      localStorage.removeItem('currentUser');
+      setCurrentUser(null);
+      setView('home');
+    };
+
+    return (
+      <div className={`min-h-screen ${darkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
+        <div className="max-w-xl mx-auto px-4 py-8">
+          <h1 className={`text-3xl font-bold mb-6 ${darkMode ? 'text-white' : 'text-gray-800'}`}>إعدادات الحساب</h1>
+          <div className={`p-6 rounded-xl shadow-lg ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
+            <label className="block font-bold mb-2">الاسم</label>
+            <input className={`w-full mb-4 px-4 py-3 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-gray-100 border-gray-200'}`} value={name} onChange={(e)=>setName(e.target.value)} />
+            <label className="block font-bold mb-2">البريد الإلكتروني</label>
+            <input className={`w-full mb-4 px-4 py-3 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-gray-100 border-gray-200'}`} value={email} onChange={(e)=>setEmail(e.target.value)} />
+            <label className="block font-bold mb-2">كلمة المرور</label>
+            <input type="password" className={`w-full mb-4 px-4 py-3 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-gray-100 border-gray-200'}`} value={password} onChange={(e)=>setPassword(e.target.value)} />
+            {message && <p className="mb-4 text-green-500 font-bold">{message}</p>}
+            <div className="mb-4">
+              <strong>نقاطك:</strong> <span className="font-bold">{currentUser?.points || 0}</span>
+            </div>
+            <button onClick={handleSave} className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold mb-3">حفظ التغييرات</button>
+            <button onClick={handleDeleteAccount} className="w-full py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg font-bold">حذف الحساب</button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // ------------- صفحة الإشعارات -------------
+  const NotificationsPage = () => {
+    const nots = currentUser?.notifications || [];
+
+    const markAsRead = (nid) => {
+      const users = JSON.parse(localStorage.getItem('users') || '[]');
+      const updated = users.map(u => {
+        if (u.id === currentUser.id) {
+          return { ...u, notifications: u.notifications.map(n => n.id === nid ? { ...n, read: true } : n) };
+        }
+        return u;
+      });
+      localStorage.setItem('users', JSON.stringify(updated));
+      const updatedCurrent = updated.find(u => u.id === currentUser.id);
+      setCurrentUser(updatedCurrent);
+      localStorage.setItem('currentUser', JSON.stringify(updatedCurrent));
+    };
+
+    const handleOpen = (n) => {
+      if (n.link) {
+        setView(n.link.view);
+        if (n.link.projectId) {
+          const p = projects.find(pr => pr.id === n.link.projectId);
+          if (p) setSelectedProject(p);
+        }
+      }
+    };
+
+    return (
+      <div className={`min-h-screen ${darkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
+        <div className="max-w-3xl mx-auto px-4 py-8">
+          <h1 className={`text-2xl font-bold mb-4 ${darkMode ? 'text-white' : 'text-gray-800'}`}>الإشعارات</h1>
+          <div className="space-y-3">
+            {nots.length === 0 && <p className={darkMode ? 'text-gray-300' : 'text-gray-700'}>لا توجد إشعارات</p>}
+            {nots.map(n => (
+              <div key={n.id} className={`p-4 rounded-lg ${n.read ? (darkMode ? 'bg-gray-800' : 'bg-white') : (darkMode ? 'bg-gray-700' : 'bg-white shadow')}`}>
+                <div className="flex justify-between items-start">
+                  <div className="flex gap-3">
+                    <div className="text-2xl">{n.icon || '🔔'}</div>
+                    <div>
+                      <div className={`font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>{n.title}</div>
+                      <div className={darkMode ? 'text-gray-300' : 'text-gray-600'}>{n.message}</div>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col gap-2">
+                    {!n.read && <button onClick={() => markAsRead(n.id)} className="text-sm text-blue-600">وضع كمقروء</button>}
+                    {n.link && <button onClick={() => handleOpen(n)} className="text-sm text-green-600">عرض</button>}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // ------------- الشريط العلوي (Navbar) مع جرس الاشعارات ونقاط المستخدم -------------
+  const Navbar = () => (
+    <nav className={`sticky top-0 z-50 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border-b shadow-sm`}>
+      <div className="max-w-7xl mx-auto px-4 py-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3 cursor-pointer" onClick={() => setView('home')}>
+            <Target className="w-8 h-8 text-blue-600" />
+            <h1 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>منصة المشاريع</h1>
+          </div>
+
+          <div className="flex items-center gap-4">
+            <button onClick={() => setDarkMode(!darkMode)} className={`p-2 rounded-lg ${darkMode ? 'bg-gray-700 text-yellow-400' : 'bg-gray-100 text-gray-600'} hover:scale-110 transition-transform`}>
+              {darkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+            </button>
+
+            {currentUser ? (
+              <div className="flex items-center gap-3">
+                <button onClick={() => setView('favorites')} className={`relative p-2 rounded-lg ${view === 'favorites' ? 'bg-red-100 text-red-600' : darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`} title="المفضلة">
+                  <Heart className={`w-5 h-5 ${favorites.length > 0 ? 'fill-current' : ''}`} />
+                  {favorites.length > 0 && <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold">{favorites.length}</span>}
+                </button>
+
+                {currentUser.type === 'owner' && (
+                  <>
+                    <button onClick={()=>setView('dashboard')} className={`flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-colors ${view === 'dashboard' ? 'bg-blue-600 text-white' : darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}><Settings className="w-5 h-5" /> لوحة التحكم</button>
+                    <button onClick={()=>setView('add-project')} className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-colors"><Plus className="w-5 h-5" /> إضافة مشروع</button>
+                  </>
+                )}
+
+                {/* زر الاشعارات (جرس ايموجي) */}
+                <div className="relative">
+                  <button onClick={() => setView('notifications')} className={`p-2 rounded-lg transition-colors ${darkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'}`} title="الإشعارات">
+                    <span className="text-2xl leading-none">🔔</span>
+                    { (currentUser.notifications||[]).filter(n=>!n.read).length > 0 && (
+                      <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold">
+                        {(currentUser.notifications||[]).filter(n=>!n.read).length}
+                      </span>
+                    )}
+                  </button>
+                </div>
+
+                <div className={`flex items-center gap-2 px-4 py-2 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
+                  <User className="w-5 h-5" />
+                  <div className="flex flex-col leading-none">
+                    <span className={`font-semibold ${darkMode ? 'text-white' : 'text-gray-800'}`}>{currentUser.name}</span>
+                    <span className="text-xs text-gray-300">{currentUser.points || 0} نقاط</span>
+                  </div>
+                </div>
+
+                <button onClick={() => { localStorage.removeItem('currentUser'); setCurrentUser(null); setView('home'); }} className={`p-2 rounded-lg ${darkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'} transition-colors`}><LogOut className="w-5 h-5" /></button>
+              </div>
+            ) : (
+              <button onClick={()=>setView('login')} className="flex items-center gap-2 px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-colors"><LogIn className="w-5 h-5" /> تسجيل الدخول</button>
+            )}
+          </div>
+        </div>
+      </div>
+    </nav>
+  );
+
+  // ------------- الصفحة الرئيسية -------------
+  const HomePage = () => (
+    <div className={`min-h-screen ${darkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
+      <div className={`${darkMode ? 'bg-gradient-to-r from-blue-900 to-indigo-900' : 'bg-gradient-to-r from-blue-600 to-indigo-600'} text-white py-20`}>
+        <div className="max-w-7xl mx-auto px-4 text-center">
+          <h2 className="text-5xl font-bold mb-6">ادعم المشاريع الصغيرة وحقق الأحلام</h2>
+          <p className="text-xl mb-8 opacity-90">منصة عربية لدعم رواد الأعمال وأصحاب المشاريع الصغيرة</p>
+
+          <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto mt-12">
+            <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6"><TrendingUp className="w-8 h-8 mx-auto mb-2" /><div className="text-3xl font-bold mb-1">{projects.length}</div><div className="text-sm opacity-90">مشروع نشط</div></div>
+            <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6"><Users className="w-8 h-8 mx-auto mb-2" /><div className="text-3xl font-bold mb-1">{projects.reduce((sum,p)=>sum+p.backers,0)}</div><div className="text-sm opacity-90">داعم</div></div>
+            <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6"><DollarSign className="w-8 h-8 mx-auto mb-2" /><div className="text-3xl font-bold mb-1">{projects.reduce((sum,p)=>sum+p.raised,0).toLocaleString()}</div><div className="text-sm opacity-90">ر.س تم جمعها</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        <div className="flex flex-col md:flex-row gap-4 mb-8">
+          <div className="flex-1 relative">
+            <Search className={`absolute right-4 top-1/2 transform -translate-y-1/2 w-5 h-5 ${darkMode ? 'text-gray-400' : 'text-gray-400'}`} />
+            <input type="text" placeholder="ابحث عن مشروع..." value={searchTerm} onChange={(e)=>setSearchTerm(e.target.value)} className={`w-full pr-12 pl-4 py-3 rounded-lg border-2 focus:outline-none focus:border-blue-500 ${darkMode ? 'bg-gray-800 border-gray-700 text-white' : 'bg-white border-gray-200'}`} />
+          </div>
+        </div>
+
+        <div className="flex flex-wrap gap-3 mb-8">
+          {categories.map(category => (
+            <button key={category} onClick={() => setSelectedCategory(category)} className={`px-6 py-2 rounded-full font-semibold transition-all ${selectedCategory === category ? 'bg-blue-600 text-white shadow-lg scale-105' : darkMode ? 'bg-gray-800 text-gray-300 hover:bg-gray-700' : 'bg-white text-gray-700 hover:bg-gray-100'}`}>{category}</button>
+          ))}
+        </div>
+
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredProjects.map(project => <ProjectCard key={project.id} project={project} />)}
+        </div>
+
+        {filteredProjects.length === 0 && (
+          <div className="text-center py-20">
+            <div className={`text-6xl mb-4`}>🔍</div>
+            <h3 className={`text-2xl font-bold mb-2 ${darkMode ? 'text-white' : 'text-gray-800'}`}>لم يتم العثور على مشاريع</h3>
+            <p className={darkMode ? 'text-gray-400' : 'text-gray-600'}>جرب البحث بكلمات مختلفة أو اختر تصنيفاً آخر</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  // ------------- فحص الاقتراب من الانتهاء (ينفذ عند التحميل وأيضًا عند تغيير المشاريع) -------------
+  useEffect(() => {
+    const checkDeadlines = () => {
+      const users = JSON.parse(localStorage.getItem('users') || '[]');
+      projects.forEach(p => {
+        if (!p.daysLeft && p.daysLeft !== 0) return;
+        if (p.daysLeft <= 3) {
+          const alreadyNotified = p.deadlineNotifiedFor || [];
+          const toNotify = [...(p.backersList || [])];
+          const ownerUser = users.find(u => u.name === p.owner);
+          if (ownerUser) toNotify.push(ownerUser.id);
+          toNotify.forEach(uid => {
+            if (!alreadyNotified.includes(uid)) {
+              addNotificationToUser(uid, {
+                title: '⏳ اقتراب انتهاء المشروع',
+                message: `مشروع "${p.title}" سينتهي خلال ${p.daysLeft} يوم${p.daysLeft > 1 ? 'ات' : ''}.`,
+                icon: '⏳',
+                link: { view: 'project-details', projectId: p.id }
+              });
+              alreadyNotified.push(uid);
+            }
+          });
+          // حفظ علامة الإشعار للمشروع لتجنّب التكرار
+          const updatedProjects = projects.map(pr => pr.id === p.id ? { ...pr, deadlineNotifiedFor: alreadyNotified } : pr);
+          setProjects(updatedProjects);
+          const localProjects = updatedProjects.filter(pr => !initialProjects.find(ip => ip.id === pr.id));
+          localStorage.setItem('localProjects', JSON.stringify(localProjects));
+        }
+      });
+    };
+
+    // نفّذ الفحص
+    checkDeadlines();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projects]);
+
+  // ------------- التجميع النهائي للعرض -------------
+  return (
+    <div className={`${darkMode ? 'dark' : ''}`} style={{ fontFamily: 'Cairo, sans-serif' }}>
+      {view !== 'login' && <Navbar />}
+
+      {view === 'login' && <LoginPage />}
+      {view === 'home' && <HomePage />}
+      {view === 'favorites' && currentUser && <FavoritesPage />}
+      {view === 'dashboard' && currentUser?.type === 'owner' && <DashboardPage />}
+      {view === 'project-details' && <ProjectDetails />}
+      {view === 'add-project' && currentUser?.type === 'owner' && <AddProjectPage />}
+      {view === 'settings' && currentUser && <UserSettingsPage />}
+      {view === 'notifications' && currentUser && <NotificationsPage />}
+    </div>
+  );
+};
+
+export default App;
